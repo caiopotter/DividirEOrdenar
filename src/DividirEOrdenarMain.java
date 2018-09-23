@@ -1,5 +1,8 @@
+import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.Random;
 
@@ -30,22 +33,52 @@ public class DividirEOrdenarMain {
 		
 	}
 
-	// TODO: TERMINAR ISSO AQUI
 	private static void comporNovoArquivoCep(RandomAccessFile novoArquivo1, RandomAccessFile novoArquivo2, RandomAccessFile novoArquivoCepCompleto, byte buffer[]) throws IOException {
-		Endereco endereco = new Endereco();
-		Long contador1 = 0L;
-		Long contador2 = 0L;
-		int qtd = 0;
-		while(qtd >= 0) {
-			qtd = novoArquivo1.read(buffer);
-			if(qtd < 0)
-				break;
-			novoArquivo1.seek(contador1*300L);
-			endereco.leEndereco(novoArquivo1);
-			//System.out.println(endereco.getCep() + " " + endereco.getLogradouro());
-			contador1++;
+		OutputStream saidaFinal = new FileOutputStream("C:\\Downloads\\arquivoFinal.dat");
+		DataOutputStream doutFinal = new DataOutputStream(saidaFinal);
+		
+		Endereco endereco1 = new Endereco();
+		Endereco endereco2 = new Endereco();
+		System.out.println("Lendo endereços: ");
+		novoArquivo1.seek(0L);
+		novoArquivo2.seek(0L);
+		endereco1.leEndereco(novoArquivo1);
+		endereco2.leEndereco(novoArquivo2);
+		
+		while(novoArquivo1.getFilePointer() <= novoArquivo1.length() || novoArquivo2.getFilePointer() <= novoArquivo2.length()) {
+			
+			if(endereco1.getCep().compareTo(endereco2.getCep()) > 0) {
+				endereco2.escreveEndereco(doutFinal);
+				if(novoArquivo2.getFilePointer() == novoArquivo2.length()) {
+					escreveRestanteArquivo(novoArquivo1, endereco1, doutFinal);
+					break;
+				}
+				endereco2.leEndereco(novoArquivo2);
+				
+			} else {
+				endereco1.escreveEndereco(doutFinal);
+				if(novoArquivo1.getFilePointer() == novoArquivo1.length()) {
+					escreveRestanteArquivo(novoArquivo2, endereco2, doutFinal);
+					break;
+				}
+				endereco1.leEndereco(novoArquivo1);
+				
+			}
 		}
+		novoArquivo1.close();
+		novoArquivo2.close();
+		doutFinal.close();
+		saidaFinal.close();
 		System.out.println("FIM");
+	}
+
+	private static void escreveRestanteArquivo(RandomAccessFile novoArquivo, Endereco endereco, DataOutputStream doutFinal) throws IOException {
+		while(novoArquivo.getFilePointer() < novoArquivo.length()) {
+			endereco.escreveEndereco(doutFinal);
+			endereco.leEndereco(novoArquivo);
+		}
+		endereco.escreveEndereco(doutFinal);
+		
 	}
 
 	private static void dividirArquivoEmDois(RandomAccessFile arquivoCepOriginal, RandomAccessFile novoArquivo1, RandomAccessFile novoArquivo2, byte buffer[]) throws IOException {
